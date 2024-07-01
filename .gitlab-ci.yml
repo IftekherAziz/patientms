@@ -1,0 +1,32 @@
+stages:
+  - build
+  - test
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+services:
+  - docker:dind
+
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+build:
+  stage: build
+  image: docker:latest
+  script:
+    - docker-compose build patientms-service
+    - docker tag patientms-service:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  only:
+    - branches
+
+test:
+  stage: test
+  image: docker:latest
+  script:
+    - docker-compose build patientms-tests
+    - docker-compose run patientms-tests
+  only:
+    - branches
